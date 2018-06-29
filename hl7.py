@@ -591,7 +591,7 @@ class tcp:
                         # Stripping Vertical Tab and File Separators
                         data = data.replace(b'\x0b', b'') # Vertical Tab
                         data = data.replace(b'\x1c', b'') # File Separator
-                        data = data.decode('utf-8')       # Converting from byte to string
+                        data = data.decode('utf-8','ignore')       # Converting from byte to string, ignoring errors
 
                         # ACK or NACK back
                         if self.ackFlag:
