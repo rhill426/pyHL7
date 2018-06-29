@@ -6,4 +6,4 @@ e.g:
 You can then import like any other library:
 >>> import hl7
 
-View "pyHL7_User_Guide.htm" for examples on common usage
+View Tutorial in Wiki for examples on common usage
