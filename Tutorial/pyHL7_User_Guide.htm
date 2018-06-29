@@ -470,8 +470,8 @@ while True:
 	# We only parse ADT messages
 	if msg['msg_type'] == 'ADT':
 		# Creating new message
-		new = {}				# New message handle, initialized as dictionary
-		new['build'] = build	# Supplying messages structure
+		new = {}			# New message handle, initialized as dictionary
+		new['build'] = msg['build']	# Supplying messages structure
 		
 		# Building MSH segment
 		new['MSH'] = msg['MSH']	# Copying MSH segment from old message
