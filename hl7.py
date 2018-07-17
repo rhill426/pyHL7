@@ -72,9 +72,6 @@ def parse(raw):
         
         # Trimming segment name off
         segment = segment[4:]
-
-        # Adding segment to structure string
-        ###structure += seg + fld
         
         # Splitting into fields and assigning to msg dictionary
         fields = segment.split(fld)
@@ -83,7 +80,7 @@ def parse(raw):
         if seg == 'MSH':
             msg[seg]['MSH.1'] = {}
             msg[seg]['MSH.1']['MSH.1.1'] = fld
-            fldCount = 2            # We've already set MSH_1 so we start at 2
+            fldCount = 2            # We've already set MSH.1 so we start at 2
         else:
             fldCount = 1
 
