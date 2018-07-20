@@ -1,7 +1,7 @@
 #*******************************************************************************#
 # HL7 library file to rapidly parse, receive, and transport HL7 v2.x data       #
-# Developed in Python 3.4                                                       #
-# January 27, 2017                                                              #
+# Developed in Python 3.6                                                       #
+# July 20, 2018                                                                 #
 #*******************************************************************************#
 import socket
 import datetime
@@ -54,7 +54,7 @@ def parse(raw):
         # Adding segment name to segment list
         repSegList = []
         if seg in segList:
-            # # Checking for repeating segments
+            # Checking for repeating segments
             index = segList.index(seg)
             if isinstance(msg[segList[index]],list):
                 repSegList = msg[segList[index]]
@@ -72,14 +72,14 @@ def parse(raw):
         
         # Trimming segment name off
         segment = segment[4:]
-        
+
         # Splitting into fields and assigning to msg dictionary
         fields = segment.split(fld)
 
         # Looping over fields
         if seg == 'MSH':
             msg[seg]['MSH.1'] = {}
-            msg[seg]['MSH.1']['MSH.1.1'] = fld
+            msg[seg]['MSH.1'] = [{'MSH.1.1':fld}]
             fldCount = 2            # We've already set MSH.1 so we start at 2
         else:
             fldCount = 1
@@ -88,56 +88,25 @@ def parse(raw):
         for field in fields:
             # This is the current key name field
             currFld = seg+"."+str(fldCount)
-
+            
+            # Special handling MSH-2
+            if currFld == 'MSH.2':
+                msg[seg]['MSH.2'] = [{'MSH.2.1':field}]
+                fldCount += 1
+                continue
+            
             # If field is repeating we loop over repetitions
-            if rep in field and currFld != 'MSH.2':
-                field_list = []     # Starting a field list for the repetitions
+            field_list = []     # Starting a field list for the repetitions
 
-                repetitions = field.split(rep)
+            repetitions = field.split(rep)
 
-                for repetition in repetitions:
-                    msg[seg][currFld] = {}
-
-                    # Looping over components
-                    if com in repetition and currFld != 'MSH.2':
-                        comCount = 1
-                        components = repetition.split(com)
-
-                        for component in components:
-                            currCom = seg+"."+str(fldCount)+"."+str(comCount)
-
-                            msg[seg][currFld][currCom] = {}
-
-                            # Looping over sub-components
-                            if sub in component:
-                                subCount = 1
-                                subcomponents = component.split(sub)
-                                for subcomponent in subcomponents:
-                                    currSub = seg+"."+str(fldCount)+"."+str(comCount)+"."+str(subCount)
-                                    msg[seg][currFld][currCom][currSub] = {}
-                                    msg[seg][currFld][currCom][currSub] = subcomponent
-
-                                    subCount += 1   # Incrementing Sub-Componenet Count
-                            else:
-                                msg[seg][currFld][currCom] = component
-
-                            comCount += 1   # Incrementing Component Count
-                    else:
-                        msg[seg][currFld][currFld + '.1'] = repetition
-                        
-                    # Appending field to list
-                    field_list.append(msg[seg][currFld])
-
-                # Setting the field to a list format    
-                msg[seg][currFld] = field_list  
-
-            else:
+            for repetition in repetitions:
                 msg[seg][currFld] = {}
 
                 # Looping over components
-                if com in field and currFld != 'MSH.2':
+                if com in repetition and currFld != 'MSH.2':
                     comCount = 1
-                    components = field.split(com)
+                    components = repetition.split(com)
 
                     for component in components:
                         currCom = seg+"."+str(fldCount)+"."+str(comCount)
@@ -158,21 +127,14 @@ def parse(raw):
                             msg[seg][currFld][currCom] = component
 
                         comCount += 1   # Incrementing Component Count
-                elif sub in field and currFld != 'MSH.2':
-                    # Processing subfields w/o components
-                    comCount = 1
-                    subCount = 1
-                    currCom = seg+"."+str(fldCount)+"."+str(comCount)
-                    msg[seg][currFld][currCom] = {}
-                    subcomponents = field.split(sub)
-                    for subcomponent in subcomponents:
-                        currSub = seg+"."+str(fldCount)+"."+str(comCount)+"."+str(subCount)
-                        msg[seg][currFld][currCom][currSub] = {}
-                        msg[seg][currFld][currCom][currSub] = subcomponent
-
-                        subCount += 1   # Incrementing Sub-Componenet Count
                 else:
-                    msg[seg][currFld][currFld + '.1'] = field
+                    msg[seg][currFld][currFld + '.1'] = repetition
+                    
+                # Appending field to list
+                field_list.append(msg[seg][currFld])
+
+            # Setting the field to a list format    
+            msg[seg][currFld] = field_list  
 
             index = fields.index(field)
             fields[index] = currFld
@@ -182,9 +144,9 @@ def parse(raw):
         # Adding segment name with number of fields to the structure string, used to rebuild the msg later
         structure.append(seg + (fld * len(fields)))
 
-        if repSegList:
-            repSegList.append(msg[seg])
-            msg[seg] = repSegList
+        #if repSegList:
+        repSegList.append(msg[seg])
+        msg[seg] = repSegList
 
     # Adding structure string to dictionary
     msg['build'] = structure
@@ -202,11 +164,11 @@ def parse(raw):
     msg['line_ending'] = '\r'
 
     # Returning short-cuts to useful fields
-    msg['msg_date'] = msg['MSH']['MSH.7']['MSH.7.1']
-    msg['msg_type'] = msg['MSH']['MSH.9']['MSH.9.1']
-    msg['msg_event'] = msg['MSH']['MSH.9']['MSH.9.2']
-    msg['msg_id'] = msg['MSH']['MSH.10']['MSH.10.1']
-    msg['msg_version'] = msg['MSH']['MSH.12']['MSH.12.1']
+    msg['msg_date'] = msg['MSH'][0]['MSH.7'][0]['MSH.7.1']
+    msg['msg_type'] = msg['MSH'][0]['MSH.9'][0]['MSH.9.1']
+    msg['msg_event'] = msg['MSH'][0]['MSH.9'][0]['MSH.9.2']
+    msg['msg_id'] = msg['MSH'][0]['MSH.10'][0]['MSH.10.1']
+    msg['msg_version'] = msg['MSH'][0]['MSH.12'][0]['MSH.12.1']
 
     # Returning dictionary
     return msg
@@ -240,11 +202,11 @@ def toString(msg):
     outMsg = ''
     
     # Getting encoding characters
-    fld = msg['MSH']['MSH.1']['MSH.1.1']
-    com = msg['MSH']['MSH.2']['MSH.2.1'][0:1]
-    rep = msg['MSH']['MSH.2']['MSH.2.1'][1:2]
-    esc = msg['MSH']['MSH.2']['MSH.2.1'][2:3]
-    sub = msg['MSH']['MSH.2']['MSH.2.1'][3:4]
+    fld = msg['MSH'][0]['MSH.1'][0]['MSH.1.1']
+    com = msg['MSH'][0]['MSH.2'][0]['MSH.2.1'][0:1]
+    rep = msg['MSH'][0]['MSH.2'][0]['MSH.2.1'][1:2]
+    esc = msg['MSH'][0]['MSH.2'][0]['MSH.2.1'][2:3]
+    sub = msg['MSH'][0]['MSH.2'][0]['MSH.2.1'][3:4]
     if 'line_ending' in msg:
         ret = msg['line_ending']
     else:
@@ -426,13 +388,6 @@ def toString(msg):
 #----------------------------------------------#
 # Utilities to use while working with HL7 data #
 #----------------------------------------------#
-def rep(dictionary):
-    """Takes a dictionary/HL7 entry and returns boolian if its repeatable"""
-    if isinstance(dictionary,list):
-        return True
-    else:
-        return False
-
 def date(string,format):
     """Takes either date string or generates timestamp and formats"""
     if string.lower() == 'now':
