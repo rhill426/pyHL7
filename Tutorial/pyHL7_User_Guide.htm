@@ -112,12 +112,12 @@ import hl7
 msg = hl7.parse(msgString)
 
 # Accessing sending system field
-print(msg['MSH']['MSH.3']['MSH.3.1'])
+print(msg['MSH'][0]['MSH.3'][0]['MSH.3.1'])
 
 # Retrieving data from a repeating segment
 if hl7.rep(msg['OBX']):
 	for obx in msg['OBX']:
-		print(obx['OBX.5']['OBX.5.1'])
+		print(obx['OBX.5'][0]['OBX.5.1'])
 
 # Converting back to string
 msgString = hl7.toString(msg)</div>
@@ -130,13 +130,13 @@ import hl7
 msg = hl7.parse(msgString)
 
 # Updating sending system field
-msg['MSH']['MSH.3']['MSH.3.1'] = 'pyHL7'
+msg['MSH'][0]['MSH.3'][0]'MSH.3.1'] = 'pyHL7'
 
 # Updating data from a repeating segment. Doing in a different manner
 if hl7.rep(msg['OBX']):
 	i = 0
 	while i < len(msg['OBX']):
-		msg['OBX'][i]['OBX.5']['OBX.5.1'] = 'OBX Value'
+		msg['OBX'][i]['OBX.5'][0]['OBX.5.1'] = 'OBX Value'
 		i += 1
 
 # Converting back to string
@@ -414,7 +414,7 @@ for msg in messages:
 	msg = hl7.parse(msg)	# Parsing message
 	
 	# Updating MSH.3
-	msg['MSH']['MSH.3']['MSH.3.1'] = 'pyHL7'
+	msg['MSH'][0]['MSH.3'][0]['MSH.3.1'] = 'pyHL7'
 	
 	msg = hl7.toString(msg)	# Converting back to string
 	
@@ -475,7 +475,7 @@ while True:
 		
 		# Building MSH segment
 		new['MSH'] = msg['MSH']	# Copying MSH segment from old message
-		new['MSH']['MSH.3']['MSH.3.1'] = 'pyHL7'
+		new['MSH'][0]['MSH.3'][0]['MSH.3.1'] = 'pyHL7'
 		
 		# Building EVN segment
 		new['EVN'] = msg['EVN']
@@ -490,7 +490,7 @@ while True:
 		# Adding new values to Z segment
 		new['ZID'] = {}
 		new['ZID']['ZID.1'] = {}
-		new['ZID']['ZID.1']['ZID.1.1'] = msg['PID']['PID.3'][0]['PID.3.1']
+		new['ZID']['ZID.1']['ZID.1.1'] = msg['PID'][0]['PID.3'][0]['PID.3.1']
 		
 		# Converting new message to string
 		msg = hl7.toString(new)
