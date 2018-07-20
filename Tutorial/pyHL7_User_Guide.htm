@@ -297,9 +297,9 @@ Reading messages into a List and looping over them
 <div id="editor" class="editor"># pyHL7 Example
 import hl7
 
-# Reading HL7 messages into Python List
-ib_file = hl7.file('C:/test_messages/HL7Messages.hl7')
-messageList = ib_file.read() # Splits file at "MSH"
+# Reading HL7 messages into Python List (supports wildcards)
+ib_file = hl7.file('C:/test_messages/*.hl7')
+messageList = ib_file.read() # Splits file at "MSH" segment by default
 
 for msg in messageList:
 	print(msg)</div>	
