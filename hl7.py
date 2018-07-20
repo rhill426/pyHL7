@@ -6,10 +6,11 @@
 import socket
 import datetime
 import pickle
+import re
 from ftplib import FTP
 from io import BytesIO, StringIO
-from re import compile, match, sub
 from os import remove, rename
+from glob import glob
 
 #-------------------------------------------------------------------------------#
 # This function takes the message as a string and creates "msg" variable        #
@@ -183,15 +184,15 @@ def toString(msg):
         return False
 
     # Setting some regex patterns
-    fieldRegEx = compile('[A-Z0-9]{3}.([0-9]+)')
-    comRegEx = compile('[A-Z0-9]{3}.[0-9]+.([0-9]+)')
-    subRegEx = compile('[A-Z0-9]{3}.[0-9]+.[0-9]+.([0-9]+)')
+    fieldRegEx = re.compile('[A-Z0-9]{3}.([0-9]+)')
+    comRegEx = re.compile('[A-Z0-9]{3}.[0-9]+.([0-9]+)')
+    subRegEx = re.compile('[A-Z0-9]{3}.[0-9]+.[0-9]+.([0-9]+)')
 
     def order(d,regex):
         """Function takes dictionary of hl7 field names and orders them"""
         ordered = {}
         for k in d:
-            n = match(regex,k).group(1)
+            n = re.match(regex,k).group(1)
             ordered[int(n)] = k
         l = []
         for k in sorted(ordered):
@@ -764,6 +765,7 @@ class file:
     def __init__(self,path,filename=None):
         path = path.replace('\\','/')
         self.path = path
+        
         self.filename = filename
         if self.filename:
             # If they supply a filename we get the full path
@@ -771,15 +773,21 @@ class file:
         else:
             # We use the filepath, assuming they put it there
             self.fullpath = self.path
+        
+        if '*' in self.fullpath:
+            # They used a wildcard so use glob to find filname
+            self.fullpath = glob(self.fullpath)[0]
 
-    def read(self,splitChar = 'MSH'):
+    def read(self,splitChar = False):
         # Reads file and splits HL7 messages
         f = open(self.fullpath,'r')
         data = f.read()
         f.close()
-
         file.msgList = []
 
+        if not splitChar:
+            # Use regex pattern to capture split characters from standard HL7 format
+            splitChar = re.match('MSH[^A-Za-z0-9]{5}',data).group(0)
         messages = data.split(splitChar)
         for msg in messages:
             if msg == '':
@@ -832,7 +840,7 @@ class file:
         temp.close()
         temp = open(self.fullpath,'w')
         data = data.replace('\n','\r')
-        data = sub(r'FHS(.*?)\r|BHS(.*?)\r','',data)
+        data = re.sub(r'FHS(.*?)\r|BHS(.*?)\r','',data)
         temp.write(data)
         temp.close()
         messages = self.read()
@@ -899,7 +907,7 @@ class file:
         temp.close()
         temp = open(self.fullpath,'w')
         data = data.replace('\n','\r')
-        data = sub(r'FHS(.*?)\r|BHS(.*?)\r','',data)
+        data = re.sub(r'FHS(.*?)\r|BHS(.*?)\r','',data)
         temp.write(data)
         temp.close()
 
