@@ -441,6 +441,7 @@ while True:
 <br>
 TCP passthrough with heavy editing.  Using best practices
 <div id="editor_large" class="editor"># pyHL7 Example
+# pyHL7 Example
 import hl7
 
 # Creating inbound TCP listener
@@ -471,7 +472,7 @@ while True:
 	if msg['msg_type'] == 'ADT':
 		# Creating new message
 		new = {}			# New message handle, initialized as dictionary
-		new['build'] = msg['build']	# Supplying messages structure
+		new['build'] = build.split()
 		
 		# Building MSH segment
 		new['MSH'] = msg['MSH']	# Copying MSH segment from old message
@@ -488,9 +489,9 @@ while True:
 			new['PV1'] = msg['PV1']
 			
 		# Adding new values to Z segment
-		new['ZID'] = {}
-		new['ZID']['ZID.1'] = {}
-		new['ZID']['ZID.1']['ZID.1.1'] = msg['PID'][0]['PID.3'][0]['PID.3.1']
+		new['ZID'] = [{}]
+		new['ZID'][0]['ZID.1'] = [{}]
+		new['ZID'][0]['ZID.1'][0]['ZID.1.1'] = msg['PID'][0]['PID.3'][0]['PID.3.1']
 		
 		# Converting new message to string
 		msg = hl7.toString(new)
@@ -501,7 +502,7 @@ while True:
 			if not ob.status:
 				ob.restart()	# If not connected restart
 			ack = ob.send(msg)	# Sending the message
-</div>
+	</div>
 	
 </body>
 
