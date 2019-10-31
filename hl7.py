@@ -165,11 +165,20 @@ def parse(raw):
     msg['line_ending'] = '\r'
 
     # Returning short-cuts to useful fields
-    msg['msg_date'] = msg['MSH'][0]['MSH.7'][0]['MSH.7.1']
-    msg['msg_type'] = msg['MSH'][0]['MSH.9'][0]['MSH.9.1']
-    msg['msg_event'] = msg['MSH'][0]['MSH.9'][0]['MSH.9.2']
-    msg['msg_id'] = msg['MSH'][0]['MSH.10'][0]['MSH.10.1']
-    msg['msg_version'] = msg['MSH'][0]['MSH.12'][0]['MSH.12.1']
+    msg['msg_date'] = ''
+    msg['msg_type'] = ''
+    msg['msg_event'] = ''
+    msg['msg_id'] = ''
+    msg['msg_version'] = ''
+    if len(msg['MSH'][0]) >= 7:
+        msg['msg_date'] = msg['MSH'][0]['MSH.7'][0]['MSH.7.1']
+    if len(msg['MSH'][0]) >= 9:
+        msg['msg_type'] = msg['MSH'][0]['MSH.9'][0]['MSH.9.1']
+        msg['msg_event'] = msg['MSH'][0]['MSH.9'][0]['MSH.9.2']
+    if len(msg['MSH'][0]) >= 10:
+        msg['msg_id'] = msg['MSH'][0]['MSH.10'][0]['MSH.10.1']
+    if len(msg['MSH'][0]) >= 12:
+        msg['msg_version'] = msg['MSH'][0]['MSH.12'][0]['MSH.12.1']
 
     # Returning dictionary
     return msg
@@ -509,7 +518,7 @@ class tcp:
             ib.bind((host,self.port))
 
             # Starts listener
-            ib.listen(1)
+            ib.listen(0)
             self.ib = ib
 
             def startListener():
