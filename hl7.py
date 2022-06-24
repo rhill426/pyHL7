@@ -174,6 +174,7 @@ def parse(raw):
         msg['msg_date'] = msg['MSH'][0]['MSH.7'][0]['MSH.7.1']
     if len(msg['MSH'][0]) >= 9:
         msg['msg_type'] = msg['MSH'][0]['MSH.9'][0]['MSH.9.1']
+    if len(msg['MSH'][0]['MSH.9'][0]) >= 2:
         msg['msg_event'] = msg['MSH'][0]['MSH.9'][0]['MSH.9.2']
     if len(msg['MSH'][0]) >= 10:
         msg['msg_id'] = msg['MSH'][0]['MSH.10'][0]['MSH.10.1']
@@ -789,8 +790,8 @@ class file:
 
     def read(self,splitChar = False):
         # Reads file and splits HL7 messages
-        f = open(self.fullpath,'r')
-        data = f.read()
+        with open(self.fullpath,encoding='utf8',errors='ignore') as f:
+            data = f.read()
         f.close()
         file.msgList = []
 
