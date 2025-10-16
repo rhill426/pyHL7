@@ -150,16 +150,16 @@ import hl7
 msg = hl7.parse(msgString)
 
 # Returning short-cuts to useful fields
-msg['msg_date'] 	# Message Date (MSH.7)
-msg['msg_type'] 	# Message Type (MSH.9.1)
-msg['msg_event'] 	# Message Trigger Event (MSH.9.2)
-msg['msg_id'] 		# Message ID (MSH.10)
-msg['msg_version'] 	# HL7 Version (MSH.12)
+msg['metadata']['msg_date'] 	# Message Date (MSH.7)
+msg['metadata']['msg_type'] 	# Message Type (MSH.9.1)
+msg['metadata']['msg_event'] 	# Message Trigger Event (MSH.9.2)
+msg['metadata']['msg_id'] 		# Message ID (MSH.10)
+msg['metadata']['msg_version'] 	# HL7 Version (MSH.12)
 
 # Other metadata fields
-msg['build'] 		# The messages structure, used when converting to string
-msg['segments']		# Listing of segments in the message
-msg['raw']			# The unparsed message
+msg['metadata']['build'] 		# The messages structure, used when converting to string
+msg['metadata']['segments']		# Listing of segments in the message
+msg['metadata']['raw']			# The unparsed message
 
 # Converting back to string
 msgString = hl7.toString(msg)</div>
