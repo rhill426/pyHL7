@@ -621,17 +621,11 @@ def addSegment(msg,segName,length=0,index=None):
 	msg['metadata']['build'].insert(index, segName + '|' * length + msg['metadata']['line_ending'])
 	
 	msg['metadata']['raw'] = ''
-	#print(msg['MSH'])
-	#print(msg['MSH'])
 	
 	# Adding empty fields
 	msg[segName] = {}
 	for i in range(length):
-		msg[segName] = [{f'{segName}.{i+1}': ''}]
-		#print(msg[segName][0])
-		msg[segName][f'{segName}.{i+1}'] = {f'{segName}.{i+1}.1': ''}
-	
-	print(msg[segName])
+		msg[segName][f'{segName}.{i+1}'] = {f'{segName}.{i+1}.1':''}
 	
 	return msg
 	
