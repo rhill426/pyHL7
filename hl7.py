@@ -552,7 +552,7 @@ def set(msg,field,val,i=0,j=0):
 			msg[seg][i][f'{seg}.{fld}'][j][f'{seg}.{fld}.{com}'] = val
 		return msg
 	else:
-		return False
+		return msg
 
 class table:
 	"""Class to create and manage table lookups using Python's pickle function"""
