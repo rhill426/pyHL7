@@ -1379,7 +1379,6 @@ class queue:
 	def getMsg(self):
 		# Getting top message with Processed flag = 0
 		row = self.q.query()
-		#print(row, self.pId)
 		while not row:
 			row = self.q.query()
 			continue
@@ -1396,6 +1395,9 @@ class queue:
 	def send(self, msg):
 		self.q.insert(msg)
 		return True
+		
+	def export(self, filename=''):
+		self.q.export(filename)
 
 #---------------------------------------#
 #       Class for HTTPS Requests        #
@@ -1546,6 +1548,10 @@ class database:
 			dbName += '.db'
 		if not tblName:
 			tblName = self.qId # Default to GUID
+			self.conn = sqlite3.connect(dbName)
+			self.cursor = self.conn.cursor()
+			return None # We don't create a table, but connect to database
+			
 		tblName = tblName.upper()
 
 		# Connecting to database
@@ -1640,10 +1646,28 @@ class database:
 		self.cursor.close()
 		self.conn.close()
 		
-	def pruner(self, name=''):
+	def pruner(self):
 		# Pruning messages
-		pass
+		sql = 'SELECT strInstanceId,intPurgeDays FROM queues'
+		self.cursor.execute(sql)
+		rows = self.cursor.fetchall()
+		for row in rows:
+			tblName = f'Q_{row[0]}'
+			delta = row[1]
+			sql = f"DELETE FROM {tblName} WHERE dtAdded < datetime('now', '-{delta} days')"
+			self.cursor.execute(sql)
+			self.conn.commit()
 		
-	def export(self, name):
+	def export(self, filename=''):
 		# Exporting queue
-		pass
+		tblName = 'Q_' + self.qId
+		if not filename:
+			filename = f'{tblName}.txt'
+		sql = f'SELECT txtMsg FROM {tblName}'
+		self.cursor.execute(sql)
+		rows = self.cursor.fetchall()
+		for row in rows:
+			encodedMsg = row[0]
+			msg = base64.b64decode(encodedMsg.encode()).decode()
+			with open(filename, 'a') as f:
+				f.write(msg)
