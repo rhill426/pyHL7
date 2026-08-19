@@ -98,11 +98,11 @@ Parsing HL7 message from String to dictionary and back
 <div id="editor" class="editor"># pyHL7 Example
 import hl7
 
-# Converting HL7 message string to dictionary
+# Converting HL7 message string to an object
 msg = hl7.parse(msgString)
 
 # Converting back to string
-msgString = hl7.toString(msg)</div>
+msgString = msg.toString()</div>
 <br>
 Retrieving data
 <div id="editor" class="editor"># pyHL7 Example
@@ -112,15 +112,14 @@ import hl7
 msg = hl7.parse(msgString)
 
 # Accessing sending system field
-print(msg['MSH'][0]['MSH.3'][0]['MSH.3.1'])
+print(msg.get('MSH.4.1'))
 
 # Retrieving data from a repeating segment
-if hl7.rep(msg['OBX']):
-	for obx in msg['OBX']:
-		print(obx['OBX.5'][0]['OBX.5.1'])
+for obx in msg.get('OBX'):
+	print(obx.get('OBX.5',''))
 
 # Converting back to string
-msgString = hl7.toString(msg)</div>
+msgString = msg.toString()</div>
 <br>
 Updating values
 <div id="editor" class="editor"># pyHL7 Example
