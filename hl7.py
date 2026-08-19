@@ -1,14 +1,14 @@
 #*******************************************************************************#
 # HL7 library file to rapidly parse, receive, and transport HL7 v2.x data       #
-# Developed in Python 3.6                                                       #
-# July 20, 2018                                                                 #
+# Developed in Python 3.14.x                                                    #
+# June 15, 2026                                                                 #
 #*******************************************************************************#
+# Standard libraries
 import socket
 import re
 import copy
 import sqlite3
 import base64
-import requests
 import json
 import time
 from ftplib import FTP
@@ -17,6 +17,13 @@ from os import remove, rename, path, getcwd
 from glob import glob
 from uuid import uuid4
 from datetime import datetime
+
+# Non-standard libraries
+try:
+	import requests
+except ImportError:
+	requests = None
+#import pyodbc
 
 #---------------------------------------#
 #       Class for HL7 manipulation      #
@@ -419,10 +426,10 @@ class parse:
 		# If trim is set we remove trailing delimiters and empty segments
 		delims = outMsg[0:9]
 		if trim:
-			fldRx = f'\{fld}+{ret}'
-			comRx = f'\{com}+\{fld}'
-			comEolRx = f'\{com}+{ret}'
-			comRx2 = f'\{com}+\{rep}'
+			fldRx = f'\\{fld}+{ret}'
+			comRx = f'\\{com}+\\{fld}'
+			comEolRx = f'\\{com}+{ret}'
+			comRx2 = f'\\{com}+\\{rep}'
 			segRx = '^[A-Z0-9]{3}'+ret+'$'
 			outMsg = re.sub(comRx,fld,outMsg)
 			outMsg = re.sub(comEolRx,ret,outMsg)
@@ -474,7 +481,7 @@ class parse:
 				f'{seg}.{fld}.{com}' in msg[seg][i][f'{seg}.{fld}'][j]:
 					value = msg[seg][i][f'{seg}.{fld}'][j][f'{seg}.{fld}.{com}']
 					if isinstance(value, dict):
-						return msg[seg][i][f'{seg}.{fld}'][j][f'{seg}.{fld}.{com}']#[f'{seg}.{fld}.{com}.1']
+						return msg[seg][i][f'{seg}.{fld}'][j][f'{seg}.{fld}.{com}'][f'{seg}.{fld}.{com}.1']
 					else:
 						return value
 				else:
@@ -650,7 +657,7 @@ class parse:
 		# Function to create a new segment
 		if length == 0:
 			# If they didn't supply a length we default to the length of the MSH segment
-			length = len(msg['MSH'][0])
+			length = len(msg['metadata']['build'][0])
 		
 		if not index:
 			# If no index we stick it at the end
@@ -1105,7 +1112,6 @@ class file:
 		if self.fn:
 			# If they supply a fn we get the full path
 			self.fullpath = self.path + '/' + self.fn
-		
 			
 	def queue(self, name='', db=''):
 		# Creates a database queue for the connection
@@ -1134,7 +1140,56 @@ class file:
 				self.pId = self.q.insert(splitChar + msg)
 
 		return file.msgList
-
+		
+	def reader(self,splitChar = False):
+		# Reading in large files and getting messages in generator
+		
+		def yieldMsg(splitChar):
+			# Initializing variables
+			raw = ''
+			reading = False
+			with open(self.fullpath, 'r',encoding='utf-8') as f:
+				for ln, line in enumerate(f, start=1):
+					if not splitChar:
+						# Use regex pattern to capture split characters from standard HL7 format
+						splitChar = re.match('MSH[^A-Za-z0-9]{5}',line).group(0)
+					if line == '':
+						continue
+					
+					if line[0:8] == splitChar:
+						if not reading:
+							reading = True # Start reading message
+							raw = ''
+						else:
+							reading = False # Stop reading message
+					
+					if reading:
+						# Building HL7 message
+						raw += line
+						continue
+					else:
+						# Process HL7
+						msg = raw 		# This is the completed message we return
+						raw = line		# Starting new message
+						reading = True	# Setting this variable
+						
+						# If queueing is enabled, add to database
+						if self.qFlag:
+							self.pId = self.q.insert(msg)
+						
+						yield msg		# Returning completed message
+				
+				return False
+						
+		self.generator = yieldMsg(splitChar)
+		
+	def getMsg(self):
+		# Getting message from fileReader
+		try:
+			return next(self.generator)
+		except StopIteration:
+			return None
+		
 	def open(self,flag='a'):
 		try:
 			if flag.lower() == 'w':
@@ -1174,8 +1229,12 @@ class file:
 		
 	def rename(self,newname):
 		"""Renaming file after finished"""
-		rename(self.fullpath, self.path + '/' + newname)
-		self.fullpath = self.path + '/' + newname
+		if '/' in self.path:
+			rename(self.fullpath, self.path + '/' + newname)
+			self.fullpath = self.path + '/' + newname
+		else:
+			rename(self.fullpath, newname)
+			self.fullpath = newname
 
 	def batch(self,fn='',comments = ''):
 		"""HL7 batching file"""
@@ -1203,10 +1262,10 @@ class file:
 		# Editing FHS segment
 		FHSList = MSH.split(fld)
 		FHSList[0] = 'FHS'
-		FHSList[6] = date('now','%Y%m%d%H%M%S')
+		FHSList[6] = datetime.strftime(datetime.now(),'%Y%m%d%H%M%S')
 		FHSList[8] = self.fn
 		FHSList[9] = comments
-		FHSList[10] = date('now','%Y%m%d%H%M%S')
+		FHSList[10] = datetime.strftime(datetime.now(),'%Y%m%d%H%M%S')
 		i = 0
 		FHS = ''
 		while i < 11:
@@ -1220,10 +1279,10 @@ class file:
 		# Editing BHS segment
 		BHSList = MSH.split(fld)
 		BHSList[0] = 'BHS'
-		BHSList[6] = date('now','%Y%m%d%H%M%S')
+		BHSList[6] = datetime.strftime(datetime.now(),'%Y%m%d%H%M%S')
 		BHSList[8] = ''
 		BHSList[9] = comments
-		BHSList[10] = date('now','%Y%m%d%H%M%S')
+		BHSList[10] = datetime.strftime(datetime.now(),'%Y%m%d%H%M%S')
 		i = 0
 		BHS = ''
 		while i < 11:
@@ -1405,6 +1464,13 @@ class queue:
 class rest:
 	"""HTTPS Requests Class"""
 	def __init__(self):
+		# Verifying that requests is installed
+		if requests is None:
+			raise RuntimeError(
+				'This feature requires the \'requests\' package. '
+				'Install it with: pip install requests'
+			)
+		
 		# Setting queue to negative
 		self.qFlag = False
 		
